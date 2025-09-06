@@ -12,6 +12,11 @@ class TaskProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+  // Constructor: langsung load tasks saat Provider dibuat
+  TaskProvider() {
+    loadTasks();
+  }
+
   // Get tasks based on completion status
   List<Task> get completedTasks => _allTasks.where((task) => task.isCompleted).toList();
   List<Task> get pendingTasks => _allTasks.where((task) => !task.isCompleted).toList();
@@ -75,21 +80,8 @@ class TaskProvider with ChangeNotifier {
 
       // Add to Hive
       await HiveService.addTask(newTask);
-      
-      // Add to local list
-      _allTasks.add(newTask);
-      
-      // Re-sort tasks
-      _allTasks.sort((a, b) {
-        if (a.isCompleted != b.isCompleted) {
-          return a.isCompleted ? 1 : -1;
-        }
-        return a.date.compareTo(b.date);
-      });
-
-      _isLoading = false;
-      notifyListeners();
-      
+      // Refresh tasks from Hive
+      await loadTasks();
       print('Task added: ${newTask.title}');
     } catch (e) {
       _isLoading = false;
@@ -111,27 +103,9 @@ class TaskProvider with ChangeNotifier {
 
       // Update in Hive
       await HiveService.updateTask(updatedTask);
-      
-      // Update in local list
-      final index = _allTasks.indexWhere((task) => task.id == updatedTask.id);
-      if (index != -1) {
-        _allTasks[index] = updatedTask;
-        
-        // Re-sort tasks
-        _allTasks.sort((a, b) {
-          if (a.isCompleted != b.isCompleted) {
-            return a.isCompleted ? 1 : -1;
-          }
-          return a.date.compareTo(b.date);
-        });
-
-        _isLoading = false;
-        notifyListeners();
-        
-        print('Task updated: ${updatedTask.title}');
-      } else {
-        throw Exception('Task not found');
-      }
+      // Refresh tasks from Hive
+      await loadTasks();
+      print('Task updated: ${updatedTask.title}');
     } catch (e) {
       _isLoading = false;
       _error = 'Failed to update task: $e';
@@ -152,13 +126,8 @@ class TaskProvider with ChangeNotifier {
 
       // Delete from Hive
       await HiveService.deleteTask(id);
-      
-      // Delete from local list
-      _allTasks.removeWhere((task) => task.id == id);
-
-      _isLoading = false;
-      notifyListeners();
-      
+      // Refresh tasks from Hive
+      await loadTasks();
       print('Task deleted: $id');
     } catch (e) {
       _isLoading = false;
@@ -293,6 +262,7 @@ class TaskProvider with ChangeNotifier {
   @override
   void dispose() {
     // Optional: Close Hive boxes if needed
+    HiveService.close();
     super.dispose();
   }
 }

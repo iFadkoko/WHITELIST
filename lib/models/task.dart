@@ -31,26 +31,42 @@ class Task extends HiveObject {
   bool isImportant;
 
   @HiveField(8)
-  final int colorValue; // Simpan color sebagai int value
+  final int colorValue; // Simpan color sebagai int
 
   @HiveField(9)
   String repeat;
 
+  /// 🔹 Konstruktor utama (dipakai di UI manual)
   Task({
-    String? id,
+  String? id,
+  required this.title,
+  this.description = '',
+  this.isCompleted = false,
+  required DateTime date,
+  TimeOfDay? time, // ❌ tidak wajib
+  this.isImportant = false,
+  Color color = Colors.blue,
+  this.repeat = 'none',
+})  : id = id ?? const Uuid().v4(),
+      date = DateTime(date.year, date.month, date.day),
+      _hour = time?.hour ?? 0,
+      _minute = time?.minute ?? 0,
+      colorValue = color.value;
+
+  /// 🔹 Konstruktor khusus Hive (biar task.g.dart gak error)
+  Task.hive({
+    required this.id,
     required this.title,
     this.description = '',
     this.isCompleted = false,
-    required DateTime date,
-    required TimeOfDay time,
+    required this.date,
+    required int hour,
+    required int minute,
     this.isImportant = false,
-    Color color = Colors.blue,
+    required this.colorValue,
     this.repeat = 'none',
-  })  : id = id ?? const Uuid().v4(),
-        date = DateTime(date.year, date.month, date.day),
-        _hour = time.hour,
-        _minute = time.minute,
-        colorValue = color.value;
+  })  : _hour = hour,
+        _minute = minute;
 
   // Getter untuk TimeOfDay
   TimeOfDay get time => TimeOfDay(hour: _hour, minute: _minute);

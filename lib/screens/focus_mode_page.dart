@@ -20,6 +20,7 @@ class FocusModePageState extends State<FocusModePage> with SingleTickerProviderS
   int _completedSessions = 0;
   final TextEditingController _workDurationController = TextEditingController(text: '25');
   final TextEditingController _breakDurationController = TextEditingController(text: '5');
+  Timer? _timer;
 
   // Timer durations in seconds
   int get workDuration {
@@ -43,6 +44,7 @@ class FocusModePageState extends State<FocusModePage> with SingleTickerProviderS
 
   @override
   void dispose() {
+    _timer?.cancel();
     _animationController.dispose();
     _workDurationController.dispose();
     _breakDurationController.dispose();
@@ -58,8 +60,11 @@ class FocusModePageState extends State<FocusModePage> with SingleTickerProviderS
 
     _animationController.forward();
 
+    // Cancel existing timer if any
+    _timer?.cancel();
+
     // Timer logic
-    Timer.periodic(const Duration(seconds: 1), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
@@ -86,9 +91,11 @@ class FocusModePageState extends State<FocusModePage> with SingleTickerProviderS
       _timerState = TimerState.paused;
     });
     _animationController.stop();
+    _timer?.cancel();
   }
 
   void _resetTimer() {
+    _timer?.cancel();
     setState(() {
       _timerState = TimerState.idle;
       _remainingSeconds = _currentTimerType == TimerType.work ? workDuration : breakDuration;
@@ -158,27 +165,7 @@ class FocusModePageState extends State<FocusModePage> with SingleTickerProviderS
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
-          const Text(
-            'Focus Mode',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Tingkatkan produktivitas dengan teknik Pomodoro',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey,
-            ),
-          ),
-          const SizedBox(height: 24),
-
           // Task Selection Dropdown
           Container(
             decoration: BoxDecoration(
@@ -294,7 +281,7 @@ class FocusModePageState extends State<FocusModePage> with SingleTickerProviderS
           // Selected Task Display
           if (_selectedTask != null)
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: _selectedTask!.color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
@@ -331,59 +318,84 @@ class FocusModePageState extends State<FocusModePage> with SingleTickerProviderS
 
           const SizedBox(height: 24),
 
-          // Timer Display
+          // Timer Display - Setengah Lingkaran
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Timer Type Indicator
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
                   decoration: BoxDecoration(
                     color: _currentTimerType == TimerType.work 
                       ? Colors.blue[50] 
                       : Colors.green[50],
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Text(
-                    _currentTimerType == TimerType.work ? 'FOKUS KERJA' : 'WAKTU ISTIRAHAT',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: _currentTimerType == TimerType.work 
-                        ? Colors.blue[700] 
-                        : Colors.green[700],
+                  child: Padding(
+                    padding: const EdgeInsets.all(10.0),
+                    child: Text(
+                      _currentTimerType == TimerType.work ? 'FOKUS KERJA' : 'WAKTU ISTIRAHAT',
+                      style: TextStyle(
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                        color: _currentTimerType == TimerType.work 
+                          ? Colors.blue[700] 
+                          : Colors.green[700],
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 30),
 
-                // Circular Progress Arc (80% circle)
+                // Half Circle Progress Indicator
                 Stack(
                   alignment: Alignment.center,
                   children: [
+                    // Background half circle
                     SizedBox(
                       width: 220,
-                      height: 220,
+                      height: 80, // Setengah tinggi untuk setengah lingkaran
                       child: CustomPaint(
-                        painter: _CircularProgressPainter(
-                          progress: _progress,
+                        painter: _HalfCircleProgressPainter(
+                          progress: 1.0, // Full background
                           backgroundColor: Colors.grey[300]!,
-                          color: _currentTimerType == TimerType.work 
-                            ? Colors.blue 
-                            : Colors.green,
+                          color: Colors.grey[300]!,
                           strokeWidth: 10,
                         ),
                       ),
                     ),
+                    // Progress half circle
+                    Padding(
+                      padding: const EdgeInsets.all(1.0),
+                      child: SizedBox(
+                        width: 220,
+                        height: 110,
+                        child: CustomPaint(
+                          painter: _HalfCircleProgressPainter(
+                            progress: _progress,
+                            backgroundColor: Colors.transparent,
+                            color: _currentTimerType == TimerType.work 
+                              ? Colors.blue 
+                              : Colors.green,
+                            strokeWidth: 10,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Timer text
                     Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
-                          _formatTime(_remainingSeconds),
-                          style: const TextStyle(
-                            fontSize: 36,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                        Padding(
+                          padding: const EdgeInsets.all(2.0),
+                          child: Text(
+                            _formatTime(_remainingSeconds),
+                            style: const TextStyle(
+                              fontSize: 36,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -409,7 +421,7 @@ class FocusModePageState extends State<FocusModePage> with SingleTickerProviderS
                     _buildControlButton(
                       icon: Icons.play_arrow,
                       label: 'Mulai',
-                      onPressed: _timerState == TimerState.running ? null : _startTimer,
+                      onPressed: _timerState == TimerState.running || _selectedTask == null ? null : _startTimer,
                       color: Colors.green,
                     ),
                     const SizedBox(width: 12),
@@ -438,7 +450,7 @@ class FocusModePageState extends State<FocusModePage> with SingleTickerProviderS
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    'Sesi selesai: $_completedSessions',
+                    'Sesi Pomodoro: $_completedSessions',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -467,6 +479,13 @@ class FocusModePageState extends State<FocusModePage> with SingleTickerProviderS
           decoration: BoxDecoration(
             color: onPressed != null ? color : Colors.grey[300],
             shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: IconButton(
             icon: Icon(icon, color: Colors.white),
@@ -478,6 +497,7 @@ class FocusModePageState extends State<FocusModePage> with SingleTickerProviderS
           label,
           style: TextStyle(
             fontSize: 12,
+            fontWeight: FontWeight.w500,
             color: onPressed != null ? color : Colors.grey,
           ),
         ),
@@ -486,14 +506,14 @@ class FocusModePageState extends State<FocusModePage> with SingleTickerProviderS
   }
 }
 
-// Custom painter for circular progress arc (80% circle)
-class _CircularProgressPainter extends CustomPainter {
+// Custom painter for half circle progress (180 degrees)
+class _HalfCircleProgressPainter extends CustomPainter {
   final double progress;
   final Color backgroundColor;
   final Color color;
   final double strokeWidth;
 
-  _CircularProgressPainter({
+  _HalfCircleProgressPainter({
     required this.progress,
     required this.backgroundColor,
     required this.color,
@@ -502,26 +522,26 @@ class _CircularProgressPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
+    final center = Offset(size.width / 2, size.height);
     final radius = (size.width - strokeWidth) / 2;
 
-    // Draw background arc
+    // Draw background half circle
     final backgroundPaint = Paint()
       ..color = backgroundColor
       ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    // Draw progress arc
+    // Draw progress half circle
     final progressPaint = Paint()
       ..color = color
       ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    // Draw 80% circle arcs (start at 180 degrees, sweep 288 degrees for 80% of 360)
-    const startAngle = -3.14; // Start at top (180 degrees in radians)
-    const sweepAngle = 2.512; // 80% of 360 degrees in radians (288 degrees)
+    // Draw half circle (180 degrees)
+    const startAngle = 3.14; // Start at left (180 degrees in radians)
+    const sweepAngle = 3.14; // 180 degrees in radians
 
     // Draw background
     canvas.drawArc(

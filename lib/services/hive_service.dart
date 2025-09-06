@@ -41,14 +41,9 @@ class HiveService {
 
   // Add a new task
   static Future<void> addTask(Task task) async {
-    try {
-      _checkInitialized();
-      await _tasksBox.put(task.id, task);
-      log('Task added: ${task.title}');
-    } catch (e, st) {
-      log('Error adding task: $e', stackTrace: st);
-      rethrow;
-    }
+    _checkInitialized();
+    await _tasksBox.put(task.id, task);
+    print('Task saved: ${task.id}'); // Tambahkan log ini untuk debug
   }
 
   // Get all tasks

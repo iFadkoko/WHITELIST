@@ -22,7 +22,6 @@ class TaskAdapter extends TypeAdapter<Task> {
       description: fields[2] as String,
       isCompleted: fields[3] as bool,
       date: fields[4] as DateTime,
-      time: TimeOfDay(hour: fields[5] as int, minute: fields[6] as int),
       isImportant: fields[7] as bool,
       repeat: fields[9] as String,
     );

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'services/hive_service.dart';
 import 'providers/task_provider.dart';
-import 'screens/home_page.dart';
+import 'screens/home_screen.dart';
 import 'screens/schedule_page.dart';
 import 'screens/focus_mode_page.dart';
 import 'screens/stats_page.dart';
@@ -62,7 +62,7 @@ class _SideNavigationWrapperState extends State<SideNavigationWrapper> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = const [
-    HomePage(),
+    HomeScreen(),
     SchedulePage(),
     FocusModePage(),
     StatsPage(),
